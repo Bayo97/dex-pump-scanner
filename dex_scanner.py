@@ -40,24 +40,28 @@ heartbeat()
 
 # ============== KOMENDY (działają tylko od Ciebie) ==============
 def polling():
-    offset = 0
     while True:
         try:
-            r = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates",
-                             params={"offset": offset, "timeout": 10}, timeout=10).json()
+            # Bez offsetu – zawsze bierze wszystko od zera
+            r = requests.get(
+                f"https://api.telegram.org/bot{TOKEN}/getUpdates",
+                params={"timeout": 15, "allowed_updates": ["message"]},
+                timeout=20
+            ).json()
+
             for u in r.get("result", []):
                 if "message" in u:
                     cid = u["message"]["chat"]["id"]
                     txt = u["message"].get("text", "").lower().strip()
-                    if cid == MY_PRIVATE_ID:  # tylko Ty możesz używać komend
+
+                    if cid == MY_PRIVATE_ID:  # tylko Ty możesz sterować
                         if txt in ["/start", "/help"]:
-                            send("DEX Pump Scanner 2025\n\nKomendy (tylko Ty):\n/status – czy żyję\n/top – ostatnie pompy")
+                            send("DEX Pump Scanner 2025\nKomendy:\n/status")
                         elif txt == "/status":
-                            send("Żyję i skanuję 4 chainy non-stop")
-                    offset = u["update_id"] + 1
-        except:
-            pass
-        time.sleep(7)
+                            send("Żyję i skanuję Solana/Base/ETH/BSC non-stop")
+        except Exception as e:
+            send(f"Polling błąd: {e}", to_private=True)
+        time.sleep(5)
 
 threading.Thread(target=polling, daemon=True).start()
 
